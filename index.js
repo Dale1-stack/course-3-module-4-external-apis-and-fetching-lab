@@ -1,35 +1,43 @@
 // index.js
-const weatherApi = "https://api.weather.gov/alerts/active?area="
+const weatherApi = "https://api.weather.gov/alerts/active?area=";
 
-// Your code here!
 const input = document.getElementById('state-input');
 const button = document.getElementById('fetch-btn');
 const errorDiv = document.getElementById('error-message');
 const loadingDiv = document.getElementById('loading');
 const container = document.getElementById('alerts-display');
 
-button.addEventListener('click', () => {
-  const state = input.value.trim();
-  fetchWeatherAlerts(state);
-});
+if (button) {
+  button.addEventListener('click', () => {
+    const state = input.value.trim();
+
+    if (input) input.value = '';
+
+    fetchWeatherAlerts(state);
+  });
+}
 
 function fetchWeatherAlerts(state) {
-  container.innerHTML = '';
+  if (container) container.innerHTML = '';
 
-  errorDiv.textContent = '';
-  errorDiv.className = 'hidden';
+  if (errorDiv) {
+    errorDiv.textContent = '';
+    errorDiv.className = 'hidden';
+  }
 
   const stateRegex = /^[A-Z]{2}$/;
 
   if (!stateRegex.test(state)) {
-    errorDiv.textContent = 'Please enter a valid 2-letter state code (e.g. CA).';
-    errorDiv.className = 'error';
+    if (errorDiv) {
+      errorDiv.textContent = 'Please enter a valid 2-letter state code (e.g. CA).';
+      errorDiv.className = 'error';
+    }
     return;
   }
 
-  loadingDiv.className = 'loading';
+  if (loadingDiv) loadingDiv.className = 'loading';
 
-  fetch(`https://api.weather.gov/alerts/active?area=${state}`)
+  fetch(`${weatherApi}${state}`)
     .then(response => {
       if (!response.ok) {
         throw new Error('Invalid state code or failed request.');
@@ -37,37 +45,43 @@ function fetchWeatherAlerts(state) {
       return response.json();
     })
     .then(data => {
-      loadingDiv.className = 'hidden';
-      input.value = '';
+      if (loadingDiv) loadingDiv.className = 'hidden';
 
       displayAlerts(data);
     })
     .catch(error => {
-      loadingDiv.className = 'hidden';
+      if (loadingDiv) loadingDiv.className = 'hidden';
 
-      errorDiv.textContent = error.message;
-      errorDiv.className = 'error';
-
-      console.log(error.message);
+      if (errorDiv) {
+        errorDiv.textContent = error.message;
+        errorDiv.className = 'error';
+      }
     });
 }
 
 function displayAlerts(data) {
-    const alerts = data.features;
-    const alertCount = alerts.length;
-    const titleText = data.title;
+  const alerts = data.features || [];
+  const alertCount = alerts.length;
+  const titleText = data.title;
 
-    const summary = document.createElement('h2');
-    summary.textContent = `${titleText}: ${alertCount}`;
+  const summary = document.createElement('h2');
+  summary.textContent = `${titleText}: ${alertCount}`;
 
-    const ul = document.createElement('ul');
+  if (container) container.appendChild(summary);
 
-    alerts.forEach(alert => {
-        const li = document.createElement('li');
-        const headline = alert.properties.headline;
-        li.textContent = headline;
-        ul.appendChild(li);
+  if (alertCount === 0) {
+    const noAlerts = document.createElement('p');
+    noAlerts.textContent = 'No active alerts for this state.';
+    if (container) container.appendChild(noAlerts);
+    return;
+  }
+
+  const ul = document.createElement('ul');
+
+  alerts.forEach(alert => {
+    const li = document.createElement('li');
+    li.textContent = alert.properties.headline;
+    ul.appendChild(li);
   });
-  container.appendChild(ul);
-  container.appendChild(summary);
+  if (container) container.appendChild(ul);
 }
