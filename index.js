@@ -1,69 +1,58 @@
+// index.js
 const weatherApi = "https://api.weather.gov/alerts/active?area=";
 
-const input = document.getElementById('state-input');
-const button = document.getElementById('fetch-btn');
-const errorDiv = document.getElementById('error-message');
-const loadingDiv = document.getElementById('loading');
-const container = document.getElementById('alerts-display');
+// Your code here!
 
-button.addEventListener('click', () => {
-  const state = input.value.trim();
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("state-input");
+  const button = document.getElementById("fetch-alerts");
+  const alertsDisplay = document.getElementById("alerts-display");
+  const errorMessage = document.getElementById("error-message");
 
-  input.value = '';
+  button.addEventListener("click", async () => {
+    const state = input.value.trim().toUpperCase();
+    if (!state) {
+      displayError("Please enter a state abbreviation.");
+      return;
+    }
 
-  fetchWeatherAlerts(state);
-});
-
-function fetchWeatherAlerts(state) {
-
-  container.innerHTML = '';
-
-  errorDiv.textContent = '';
-  errorDiv.className = 'hidden';
-
-  loadingDiv.className = 'loading';
-
-  fetch(`${weatherApi}${state}`)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Invalid state code or failed request.');
-      }
-      return response.json();
-    })
-    .then(data => {
-      console.log(data); 
-
-      loadingDiv.className = 'hidden';
-
+    try {
+      const data = await fetchAlerts(state);
       displayAlerts(data);
-    })
-    .catch(error => {
-      loadingDiv.className = 'hidden';
-
-      errorDiv.textContent = error.message;
-      errorDiv.className = 'error';
-    });
-}
-
-
-function displayAlerts(data) {
-  const alerts = data.features || [];
-  const alertCount = alerts.length;
-
- 
-  const summary = document.createElement('h2');
-  summary.textContent =
-    `Current watches, warnings, and advisories for ${data.title.split(' for ')[1]}: ${alertCount}`;
-
-  container.appendChild(summary);
-
-  const ul = document.createElement('ul');
-
-  alerts.forEach(alert => {
-    const li = document.createElement('li');
-    li.textContent = alert.properties.headline;
-    ul.appendChild(li);
+      input.value = "";
+      errorMessage.textContent = "";
+      errorMessage.classList.add("hidden");
+    } catch (error) {
+      displayError(error.message);
+    }
   });
 
-  container.appendChild(ul);
-}
+  async function fetchAlerts(state) {
+    const response = await fetch(`${weatherApi}${state}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch alerts: ${response.statusText}`);
+    }
+    const data = await response.json();
+    return data;
+  }
+
+  function displayAlerts(data) {
+    alertsDisplay.innerHTML = "";
+    const title = data.title;
+    const features = data.features || [];
+    const summary = document.createElement("p");
+    summary.textContent = `${title}: ${features.length}`;
+    alertsDisplay.appendChild(summary);
+
+    features.forEach((feature) => {
+      const headline = document.createElement("p");
+      headline.textContent = feature.properties.headline;
+      alertsDisplay.appendChild(headline);
+    });
+  }
+
+  function displayError(message) {
+    errorMessage.textContent = message;
+    errorMessage.classList.remove("hidden");
+  }
+});
